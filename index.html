@@ -24,7 +24,7 @@
         .custom-scrollbar::-webkit-scrollbar-thumb {
             background: #cbd5e1; 
             border-radius: 4px;
-        }
+        }b
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: #94a3b8; 
         }
@@ -37,8 +37,21 @@
         
         <!-- ផ្នែកខាងលើ (Header) -->
         <div class="bg-blue-600 p-5 md:p-6 text-white text-center shadow-md md:shadow-none z-10">
-            <h2 class="text-xl md:text-2xl font-bold mb-1">ផែនការប្រចាំថ្ងៃរបស់ខ្ញុំ</h2>
-            <p class="text-blue-200 text-xs md:text-sm">រៀបចំសកម្មភាពរបស់អ្នកឲ្យមានប្រសិទ្ធភាព</p>
+            <h2 class="text-xl md:text-2xl font-bold mb-3">ផែនការប្រចាំថ្ងៃរបស់ខ្ញុំ</h2>
+            
+            <!-- ឧបករណ៍ផ្លាស់ប្តូរថ្ងៃ (Date Navigation) -->
+            <div class="flex items-center justify-between bg-blue-700/50 rounded-lg p-2 backdrop-blur-sm">
+                <button onclick="changeDate(-1)" class="p-2 hover:bg-blue-500 rounded-lg transition-colors focus:outline-none active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <div class="flex flex-col">
+                    <span id="dateTitle" class="font-bold text-sm md:text-base">ថ្ងៃនេះ</span>
+                    <span id="dateSubtitle" class="text-[10px] md:text-xs text-blue-200"></span>
+                </div>
+                <button onclick="changeDate(1)" class="p-2 hover:bg-blue-500 rounded-lg transition-colors focus:outline-none active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+            </div>
         </div>
 
         <!-- ផ្នែកបញ្ចូលទិន្នន័យ (Input Section) -->
@@ -53,8 +66,8 @@
                 <input type="text" id="taskInput" placeholder="តើអ្នកចង់ធ្វើអ្វីថ្ងៃនេះ?" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                 
                 <div class="flex flex-col sm:flex-row gap-3">
-                    <!-- ប្រអប់ជ្រើសរើសពេលវេលា -->
-                    <input type="datetime-local" id="taskTime" class="flex-1 p-3 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white">
+                    <!-- ប្រអប់ជ្រើសរើសពេលវេលា (ប្តូរមកត្រឹមតែម៉ោង ព្រោះថ្ងៃរើសនៅខាងលើរួចហើយ) -->
+                    <input type="time" id="taskTime" class="flex-1 p-3 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white">
                     
                     <!-- ប្រអប់ជ្រើសរើសអាទិភាព -->
                     <select id="taskPriority" class="p-3 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer bg-white">
@@ -95,19 +108,78 @@
     <script>
         // អថេរសម្រាប់ផ្ទុកបញ្ជីសកម្មភាព
         let tasks = [];
+        
+        // អថេរសម្រាប់កំណត់ថ្ងៃបច្ចុប្បន្នដែលកំពុងមើល
+        let viewDate = new Date();
 
         // ពេលបើកកម្មវិធី ឲ្យទាញទិន្នន័យពី Local Storage មកបង្ហាញ
         document.addEventListener('DOMContentLoaded', () => {
             const savedTasks = localStorage.getItem('myDailyTasks');
             if (savedTasks) {
                 tasks = JSON.parse(savedTasks);
+                // តម្រូវទិន្នន័យចាស់ៗឲ្យមានថ្ងៃខែច្បាស់លាស់
+                tasks = tasks.map(task => {
+                    if (!task.date && task.time) {
+                        return { ...task, date: task.time.split('T')[0], time: task.time.split('T')[1] || '' };
+                    }
+                    return task;
+                });
             }
+            updateDateDisplay();
             renderTasks();
         });
 
         // អនុគមន៍សម្រាប់រក្សាទុកទិន្នន័យទៅ Local Storage
         function saveTasks() {
             localStorage.setItem('myDailyTasks', JSON.stringify(tasks));
+        }
+
+        // អនុគមន៍សម្រាប់ប្តូរថ្ងៃ (ឆ្វេង/ស្តាំ)
+        function changeDate(daysOffset) {
+            viewDate.setDate(viewDate.getDate() + daysOffset);
+            updateDateDisplay();
+            renderTasks();
+        }
+
+        // អនុគមន៍សម្រាប់ Format ថ្ងៃជា YYYY-MM-DD
+        function getFormatDateString(dateObj) {
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // អនុគមន៍សម្រាប់បង្ហាញឈ្មោះថ្ងៃនៅលើ Header
+        function updateDateDisplay() {
+            const titleEl = document.getElementById('dateTitle');
+            const subtitleEl = document.getElementById('dateSubtitle');
+            
+            const today = new Date();
+            const todayStr = getFormatDateString(today);
+            const viewStr = getFormatDateString(viewDate);
+            
+            // កំណត់ចំណងជើង (Title)
+            if (viewStr === todayStr) {
+                titleEl.textContent = "ថ្ងៃនេះ";
+            } else {
+                const tomorrow = new Date();
+                tomorrow.setDate(today.getDate() + 1);
+                const yesterday = new Date();
+                yesterday.setDate(today.getDate() - 1);
+                
+                if (viewStr === getFormatDateString(tomorrow)) {
+                    titleEl.textContent = "ថ្ងៃស្អែក";
+                } else if (viewStr === getFormatDateString(yesterday)) {
+                    titleEl.textContent = "ម្សិលមិញ";
+                } else {
+                    titleEl.textContent = "កាលវិភាគ";
+                }
+            }
+            
+            // កំណត់ថ្ងៃខែឆ្នាំលម្អិត (Subtitle)
+            subtitleEl.textContent = viewDate.toLocaleDateString('km-KH', { 
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+            });
         }
 
         // អនុគមន៍សម្រាប់បន្ថែមសកម្មភាព
@@ -131,6 +203,7 @@
                 id: Date.now(), // បង្កើត ID ផ្សេងៗគ្នាដោយប្រើពេលវេលា
                 text: taskText,
                 time: timeInput.value,
+                date: getFormatDateString(viewDate), // ផ្ទុកតាមថ្ងៃដែលកំពុងមើល
                 priority: priorityInput.value,
                 completed: false
             };
@@ -179,8 +252,12 @@
             // សម្អាតបញ្ជីចាស់
             taskList.innerHTML = "";
 
+            // ចម្រាញ់យកតែសកម្មភាពណាដែលត្រូវនឹងថ្ងៃដែលកំពុងមើល
+            const currentViewDateStr = getFormatDateString(viewDate);
+            const dailyTasks = tasks.filter(task => task.date === currentViewDateStr);
+
             // បង្ហាញរូបភាពបើគ្មានសកម្មភាព
-            if (tasks.length === 0) {
+            if (dailyTasks.length === 0) {
                 emptyState.classList.remove("hidden");
                 emptyState.classList.add("flex");
             } else {
@@ -189,7 +266,7 @@
             }
 
             // តម្រៀបសកម្មភាព (អត់ទាន់រួចនៅខាងលើ, រួចហើយនៅខាងក្រោម)
-            const sortedTasks = [...tasks].sort((a, b) => a.completed - b.completed);
+            const sortedTasks = [...dailyTasks].sort((a, b) => a.completed - b.completed);
 
             // បង្កើត HTML សម្រាប់សកម្មភាពនីមួយៗ
             sortedTasks.forEach(task => {
@@ -217,13 +294,15 @@
                 // Format ពេលវេលា (បើមាន)
                 let timeDisplay = "";
                 if (task.time) {
-                    const dateObj = new Date(task.time);
-                    const formattedDate = dateObj.toLocaleString('km-KH', { 
-                        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-                    });
+                    // បម្លែងម៉ោងពី 24h ទៅ 12h ជាភាសាខ្មែរ
+                    const [hourStr, minStr] = task.time.split(':');
+                    let hour = parseInt(hourStr);
+                    const period = hour >= 12 ? 'ល្ងាច/យប់' : 'ព្រឹក';
+                    hour = hour % 12 || 12;
+                    
                     timeDisplay = `<div class="text-xs text-gray-500 mt-1 flex items-center gap-1">
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                        ${formattedDate}
+                        ម៉ោង ${hour}:${minStr} ${period}
                     </div>`;
                 }
 
